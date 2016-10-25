@@ -67,24 +67,14 @@ class HFOState(object):
         self.player_on_ball = HFO.playerOnBall()
         self.steps += 1
 	
-    def reward(self):
-        move_to_ball_reward = self.move_to_ball_reward()
-        kick_to_ball_reward = 3 * self.kick_to_ball_reward()
-        pass_reward = 3 * self.pass_reward()
-        eot_reward = self.EOT_reward()
-        reward = move_to_ball_reward + kick_to_ball_reard + eot_reward
-        self.extrinsic_reward += eot_reward
-        self.total_reward += reward
+    def move_to_ball_reward(self):
+        reward = 0
+        if self.player_on_ball.unum < 0 or self.player_on_ball.unum == self.unum:
+            reward += self.ball_prox_change
+        if self.kickable_change >= 1 and not self.got_kickable_reward:
+            reward += 1.0
+            self.got_kickable_reward = True
         return reward
-	
-	def move_to_ball_reward(self):
-		reward = 0
-		if self.player_on_ball.unum < 0 or self.player_on_ball.unum == self.unum:
-			reward += self.ball_prox_change
-		if self.kickable_change >= 1 and not self.got_kickable_reward:
-			reward += 1.0
-			self.got_kickable_reward = True
-		return reward
 	
 	def kick_to_goal_reward(self):
 		if self.player_on_ball.unum == self.unum:
@@ -109,6 +99,16 @@ class HFOState(object):
 			self.pass_active = False
 			return 1
 		return 0
+
+    def reward(self):
+        move_to_ball_reward = self.move_to_ball_reward()
+        kick_to_ball_reward = 3 * self.kick_to_ball_reward()
+        pass_reward = 3 * self.pass_reward()
+        eot_reward = self.EOT_reward()
+        reward = move_to_ball_reward + kick_to_ball_reard + eot_reward
+        self.extrinsic_reward += eot_reward
+        self.total_reward += reward
+        return reward
 
 def num_state_features(num_players):
     return 58 + 8 * num_players
