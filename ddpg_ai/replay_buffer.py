@@ -29,23 +29,24 @@ class ReplayBuffer(object):
             self.buffer.append(experience)
             
     def addMultiple(self, experiences):
-		for experience in experiences:
-			s = experience[0]
-			a = experience[1]
-			r = experience[2]
-			t = experience[3]
-			s2 = experience[4]
-			add(self, s, a, r, t, s2)
+        for experience in experiences:
+            s = experience[0]
+            a = experience[1]
+            r = experience[2]
+            t = experience[3]
+            s2 = experience[4]
+            self.add(s, a, r, t, s2)
 
     def label(self, experiences):
-		 assert len(experiences) > 0
-		 terminal = experiences[len(experiences) - 1]
-		 terminal[3] = terminal[2]
-		 for i in xrange(len(experiences) - 2, 0, -1):
-			 experience = experiences[i]
-			 reward = experience[2]
-			 target = (experiences[i+1])[3]
-			 experience[3] = reward + gamma * target
+        assert len(experiences) > 0
+        terminal = experiences[len(experiences) - 1]
+        terminal = (terminal[0], terminal[1], terminal[2], terminal[2], terminal[4])
+        for i in xrange(len(experiences) - 2, 0, -1):
+            experience = experiences[i]
+            reward = experience[2]
+            target = (experiences[i+1])[3]
+            total_reward = reward + self.gamma * target
+            experience = (experience[0], experience[1], experience[2], total_reward, experience[4])
 	
     def size(self):
         return self.count

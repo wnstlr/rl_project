@@ -3,7 +3,7 @@ from hfo import *
 pass_vel_threshold = -0.5
 
 class HFOState(object):
-    
+
     def __init__(self, unum):
         self.old_ball_prox = 0
         self.ball_prox_change = 0
@@ -18,7 +18,7 @@ class HFOState(object):
         self.episode_over = False
         self.got_kickable_reward = False
         self.unum = unum
-        self.active_pass = 0 
+        self.pass_active = 0 
         self.pass_vel_threshold = -0.5
         self.old_player_on_ball = None
         self.player_on_ball = None
@@ -51,7 +51,7 @@ class HFOState(object):
         ball_vel_valid = game_state[54]
         ball_vec = game_state[55]
         if ball_vel_valid and ball_vec > pass_vel_threshold:
-            self.active_pass = True
+            self.pass_active = True
         if self.steps > 0:
             self.ball_prox_change = ball_proximity - self.old_ball_prox
             self.kickable_change = kickable - self.old_kickable
@@ -66,7 +66,7 @@ class HFOState(object):
         self.old_player_on_ball = self.player_on_ball
         self.player_on_ball = HFO.playerOnBall()
         self.steps += 1
-	
+
     def move_to_ball_reward(self):
         reward = 0
         if self.player_on_ball.unum < 0 or self.player_on_ball.unum == self.unum:
@@ -75,37 +75,37 @@ class HFOState(object):
             reward += 1.0
             self.got_kickable_reward = True
         return reward
+
+    def kick_to_goal_reward(self):
+        if self.player_on_ball.unum == self.unum:
+            return -1 * self.ball_goal_dist_change
+        elif self.got_kickable_reward:
+            return -0.2 * self.ball_goal_dist_change
+        return 0
+
+    def EOT_reward(self):
+        if self.status == GOAL:
+            assert self.old_player_on_ball.side == LEFT
+            if self.player_on_ball.unum == self.unum:
+                return 5
+            else:
+                return 1
+        elif self.status == CAPTURED_BY_DEFENSE:
+            return 0
+        return 0
 	
-	def kick_to_goal_reward(self):
-		if self.player_on_ball.unum == self.unum:
-			return -1 * self.ball_goal_dist_change
-		elif self.got_kickable_reward:
-			return -0.2 * self.ball_goal_dist_change
-		return 0
-		
-	def EOT_reward(self):
-		if self.status == GOAL:
-			assert self.old_player_on_ball.side == LEFT
-			if self.player_on_ball.unum == self.unum:
-				return 5
-			else:
-				return 1
-		elif self.status == CAPTURED_BY_DEFENSE:
-			return 0
-		return 0
-	
-	def pass_reward(self):
-		if self.pass_active and self.player_on_ball.unum > 0 and self.player_on_ball.unum != self.old_player_on_ball.unum:
-			self.pass_active = False
-			return 1
-		return 0
+    def pass_reward(self):
+        if self.pass_active and self.player_on_ball.unum > 0 and self.player_on_ball.unum != self.old_player_on_ball.unum:
+            self.pass_active = False
+            return 1
+        return 0
 
     def reward(self):
         move_to_ball_reward = self.move_to_ball_reward()
-        kick_to_ball_reward = 3 * self.kick_to_ball_reward()
+        kick_to_goal_reward = 3 * self.kick_to_goal_reward()
         pass_reward = 3 * self.pass_reward()
         eot_reward = self.EOT_reward()
-        reward = move_to_ball_reward + kick_to_ball_reard + eot_reward
+        reward = move_to_ball_reward + kick_to_goal_reward + eot_reward
         self.extrinsic_reward += eot_reward
         self.total_reward += reward
         return reward

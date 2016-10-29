@@ -15,6 +15,7 @@ TEAM_NAME = "base_left"
 PLAY_GOALIE = False
 RECORD_DIR = ""
 MAX_ITER = 10000000
+UPDATE_RATIO = 0.1
 
 EPSILON = 0.1
 OFFENSE_AGENTS = 1
@@ -39,9 +40,10 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, update, tid):
     assert not game.episode_over
     while not game.episode_over:
         current_state = HFO.getState()
+        current_state_size = HFO.getStateSize()
         # print current_state.size
         # print actorNet.state_size
-        assert current_state.size == actorNet.state_size and current_state.size == criticNet.state_size
+        assert current_state_size == actorNet.state_size and current_state_size == criticNet.state_size
         past_states.append(current_state)
         if len(past_states) < STATE_INPUT_COUNT:
             HFO.act(DASH, 0, 0)
@@ -49,19 +51,26 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, update, tid):
             while len(past_states) > STATE_INPUT_COUNT:
                 past_states.popleft()
                 actor_output = actorNet.select_action(past_states[0], epsilon)
-                action, action_arg1, action_arg2 = get_action(actor_output)
-                HFO.act(action, action_arg1, action_arg2)
+                # print actor_output.shape
+                # print actor_output
+                actor_output_row = actor_output[0]
+                action, action_arg1, action_arg2 = get_action(actor_output_row)
+                if action == 0 or action == 3:
+                    HFO.act(action, action_arg1, action_arg2)
+                else:
+                    HFO.act(action, action_arg1)
                 game.update(HFO)
                 reward = game.reward()
                 if update:
                     next_state = HFO.getState()
-                    assert next_state.size() == actorNet.state_size and current_state.size() == criticNet.state_size
+                    next_state_size = HFO.getStateSize()
+                    assert next_state_size == actorNet.state_size and next_state_size == criticNet.state_size
                     transition = None
                     if game.status == IN_GAME:
-                        transition = (past_states[0], actor_output, reward, 0, next_state)
+                        transition = (past_states[0], actor_output_row, reward, 0, next_state)
                     else:
-                        transition = (past_states[0], actor_output, reward, 0, np.zeros(actorNet.state_size))
-                    episode.push_back(transition)
+                        transition = (past_states[0], actor_output_row, reward, 0, np.zeros(actorNet.state_size))
+                    episode.append(transition)
     if update:
         actorNet.replay_buffer.label(episode)
         actorNet.replay_buffer.addMultiple(episode)
@@ -78,6 +87,7 @@ def keepPlaying(tid, port):
         HFO = HFOEnvironment()
         HFO.connectToServer(LOW_LEVEL_FEATURE_SET, CONFIG_DIR, port, SERVER_ADDR, TEAM_NAME, PLAY_GOALIE, RECORD_DIR)
         time.sleep(5)
+        sess.run(tf.initialize_all_variables())
         actor.unum = Player._fields_[1][1]
         critic.unum = Player._fields_[1][1]
         num_iter = max(actor.iterations, critic.iterations)
@@ -85,7 +95,7 @@ def keepPlaying(tid, port):
         while max(actor.iterations, critic.iterations) < MAX_ITER:
             epsilon = calculate_epsilon(max(actor.iterations, critic.iterations))
             (total_reward, steps, status, extrinsic_reward) = playEpisode(HFO, actor, critic, epsilon, True, tid)
-            n_updates = np.floor(steps * FLAG_UPDATE_RATIO)
+            n_updates = int(np.floor(steps * UPDATE_RATIO))
             for i in xrange(n_updates):
                 update(sess, actor.replay_buffer, actor, critic)
         HFO.act(QUIT)
