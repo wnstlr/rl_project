@@ -50,27 +50,27 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, update, tid):
         else:
             while len(past_states) > STATE_INPUT_COUNT:
                 past_states.popleft()
-                actor_output = actorNet.select_action(past_states[0], epsilon)
-                # print actor_output.shape
-                # print actor_output
-                actor_output_row = actor_output[0]
-                action, action_arg1, action_arg2 = get_action(actor_output_row)
-                if action == 0 or action == 3:
-                    HFO.act(action, action_arg1, action_arg2)
+            actor_output = actorNet.select_action(past_states[0], epsilon)
+            # print actor_output.shape
+            # print actor_output
+            actor_output_row = actor_output[0]
+            action, action_arg1, action_arg2 = get_action(actor_output_row)
+            if action == 0 or action == 3:
+                HFO.act(action, action_arg1, action_arg2)
+            else:
+                HFO.act(action, action_arg1)
+            game.update(HFO)
+            reward = game.reward()
+            if update:
+                next_state = HFO.getState()
+                next_state_size = HFO.getStateSize()
+                assert next_state_size == actorNet.state_size and next_state_size == criticNet.state_size
+                transition = None
+                if game.status == IN_GAME:
+                    transition = (past_states[0], actor_output_row, reward, 0, next_state)
                 else:
-                    HFO.act(action, action_arg1)
-                game.update(HFO)
-                reward = game.reward()
-                if update:
-                    next_state = HFO.getState()
-                    next_state_size = HFO.getStateSize()
-                    assert next_state_size == actorNet.state_size and next_state_size == criticNet.state_size
-                    transition = None
-                    if game.status == IN_GAME:
-                        transition = (past_states[0], actor_output_row, reward, 0, next_state)
-                    else:
-                        transition = (past_states[0], actor_output_row, reward, 0, np.zeros(actorNet.state_size))
-                    episode.append(transition)
+                    transition = (past_states[0], actor_output_row, reward, 0, np.zeros(actorNet.state_size))
+                episode.append(transition)
     if update:
         actorNet.replay_buffer.label(episode)
         actorNet.replay_buffer.addMultiple(episode)
