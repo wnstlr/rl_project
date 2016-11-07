@@ -9,8 +9,6 @@ pass_vel_threshold = -0.5
 
 class GymSoccerAgainstKeeperState():
     def __init__(self, unum):
-        self.env = SoccerAgainstKeeperEnv()
-        self.env._render()
         self.old_ball_prox = 0
         self.ball_prox_change = 0
         self.old_kickable = 0
@@ -28,6 +26,32 @@ class GymSoccerAgainstKeeperState():
         self.pass_vel_threshold = -0.5
         self.old_player_on_ball = None
         self.player_on_ball = None
+
+    def create_env(self):
+        self.env = SoccerAgainstKeeperEnv()
+        self.env._render()
+        self.update()
+
+    def reset(self, unum):
+        self.env._reset()
+        self.old_ball_prox = 0
+        self.ball_prox_change = 0
+        self.old_kickable = 0
+        self.kickable_change = 0
+        self.old_ball_goal_dist = 0
+        self.ball_goal_dist_change = 0
+        self.steps = 0
+        self.total_reward = 0
+        self.extrinsic_reward = 0
+        self.status = hfo_py.IN_GAME
+        self.episode_over = False
+        self.got_kickable_reward = False
+        self.unum = unum
+        self.pass_active = 0
+        self.pass_vel_threshold = -0.5
+        self.old_player_on_ball = None
+        self.player_on_ball = None
+        self.update()
 
     def update(self):
         status = self.env.status

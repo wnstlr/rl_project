@@ -172,6 +172,7 @@ class ActorNetwork(object):
             action_arg2 = actor_output[ACTION_SIZE + arg2]
         return action_type, action_arg1, action_arg2
 
+
 class CriticNetwork(object):
     """
     Input to the network is the state and action, output is Q(s,a).
@@ -312,30 +313,28 @@ def get_param_offset(action, arg):
 		return -1
 	return 4 + arg
 
-def get_action(actor_output_row):
-    actor_output_row[2] = -99999
-    action = np.argmax(actor_output_row[0:ACTION_SIZE])
+def get_action(actor_output):
+    actor_output[0,2] = -99999
+    action = np.argmax(actor_output[0,0:ACTION_SIZE])
     arg1_offset = get_param_offset(action, 0)
     assert arg1_offset >= 0
-    action_arg1 = actor_output_row[ACTION_SIZE + arg1_offset]
+    action_arg1 = actor_output[0,ACTION_SIZE + arg1_offset]
     arg2_offset = get_param_offset(action, 1)
     action_arg2 = 0
     if arg2_offset < 0:
         action_arg2 = 0
     else:
-        action_arg2 = actor_output_row[ACTION_SIZE + arg2_offset]
+        action_arg2 = actor_output[0,ACTION_SIZE + arg2_offset]
     return action, arg1_offset, arg2_offset
 
 def update(sess, replay_buffer, actor, critic):
-    if replay_buffer.size() < MEMORY_THRESHOLD:
-        return
+    if len(replay_buffer) < MEMORY_THRESHOLD:
+		return
     s_batch, a_batch, r_batch, t_batch, s2_batch = \
         replay_buffer.sample_batch(MINIBATCH_SIZE)
 
     # Calculate targets
-    target_actor_action = actor.predict_target(s2_batch)
-    target_action_all = np.concatenate((target_actor_action[0], target_actor_action[1]), 1)
-    target_q = critic.predict_target(s2_batch, target_action_all)
+    target_q = critic.predict_target(s2_batch, actor.predict_target(s2_batch))
 
     y_i = []
     for k in xrange(MINIBATCH_SIZE):
@@ -347,53 +346,39 @@ def update(sess, replay_buffer, actor, critic):
             assert np.isfinite(BETA * (r_batch[k] + GAMMA * target_q[k]) + (1 - BETA) * on_policy_target)
             y_i.append(BETA * (r_batch[k] + GAMMA * target_q[k]) + (1 - BETA) * on_policy_target)
 
-    # Update the critic given the targets
-    # print len(y_i), MINIBATCH_SIZE
-    # print a_batch.shape
-    # action_batch = a_batch[:,0:ACTION_SIZE]
-    # action_params_batch = a_batch[:,ACTION_SIZE:ACTION_SIZE+PARAM_SIZE]
-    predicted_q_value, _ = critic.train(s_batch, a_batch, np.reshape(y_i, (MINIBATCH_SIZE, 1)))
-    # print predicted_q_value.shape
-    # print predicted_q_value
-    # assert(np.isfinite(critic_loss))
-    critic.iterations += 1
+		# Update the critic given the targets
+        predicted_q_value, _ = critic.train(s_batch, a_batch, np.reshape(y_i, (MINIBATCH_SIZE, 1)))
+        assert(np.isfinite(predicted_q_value))
+        critic.iterations += 1
 
-    # Update the actor policy using the sampled gradient
-    action_out, action_param_out = actor.predict(s_batch)
-    # print s_batch.shape, action_out.shape
-    # print action_param_out
-    action_all = np.concatenate((action_out, action_param_out), 1)
-    # print action_all.shape
-    grads_action_all = critic.action_all_gradients(s_batch, action_all)
-    # print grads_action_all
-    grads_action = grads_action_all[0][:,0:ACTION_SIZE]
-    #print grads_action
-    # grads_action_params = critic.action_param_gradients(s_batch, action_param_out)
-    grads_action_params = grads_action_all[0][:,ACTION_SIZE:ACTION_SIZE+PARAM_SIZE]
-    for n in xrange(MINIBATCH_SIZE):
-        for h in xrange(ACTION_SIZE):
-            maximum = 1.0
-            mininum = -1.0
-            if grads_action[n, h] < 0:
-                grads_action[n, h] *= (maximum - action_out[n][h]) / (maximum - mininum)
-            elif grads_action[n, h] > 0:
-                grads_action[n, h] *= (action_out[n][h] - mininum) / (maximum - mininum)
-        for h in xrange(PARAM_SIZE):
-            maximum = 0
-            mininum = 0
-            if h == 0 or h == 4:
-                maximum = 100
+		# Update the actor policy using the sampled gradient
+        action_out, action_param_out = actor.predict(s_batch)
+        grads_action = critic.action_gradients(s_batch, action_out)
+        grads_action_params = critic.action_param_gradients(s_batch, action_param_out)
+        for n in xrange(MINIBATCH_SIZE):
+            for h in xrange(ACTION_SIZE):
+                maximum = 1.0
+                mininum = -1.0
+                if grads_action[n, h] < 0:
+                    grads_action[n, h] *= (maximum - action_out[n][h]) / (maximum - mininum)
+                elif grads_action[n, h] > 0:
+                    grads_action[n, h] *= (action_out[n][h] - mininum) / (maximum - mininum)
+            for h in xrange(PARAM_SIZE):
+                maximum = 0
                 mininum = 0
-            elif h == 1 or h == 2 or h == 3 or h == 5:
-                maximum = 180
-                mininum = -180
-            if grads_action_params[n, h] < 0:
-                grads_action_params[n, h] *= (maximum - action_param_out[n][h]) / (maximum - mininum)
-            elif grads_action_params[n, h] > 0:
-                grads_action_params[n, h] *= (action_param_out[n][h] - mininum) / (maximum - mininum)
-    actor.train(s_batch, grads_action, grads_action_params)
-    actor.iterations += 1
+                if h == 0 or h == 4:
+                    maximum = 100
+                    mininum = 0
+                elif h == 1 or h == 2 or h == 3 or h == 5:
+                    maximum = 180
+                    mininum = -180
+                if grads_action_params[n, h] < 0:
+                    grads_action_params[n, h] *= (maximum - action_param_out[n][h]) / (maximum - mininum)
+                elif grads_action_params[n, h] > 0:
+                    grads_action_params[n, h] *= (action_param_out[n][h] - mininum) / (maximum - mininum)
+		actor.train(s_batch, grads_action, grads_action_params)
+		actor.iterations += 1
 
-    # Update target networks
-    actor.update_target_network()
-    critic.update_target_network()
+		# Update target networks
+		actor.update_target_network()
+		critic.update_target_network()

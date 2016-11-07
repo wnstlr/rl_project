@@ -51,6 +51,8 @@ def playEpisode(GymSoccer, actorNet, criticNet, epsilon, update, tid):
                 # print actor_output.shape
                 # print actor_output
                 actor_output_row = actor_output[0]
+                print actor_output.shape
+                print actor_output_row.shape
                 action, action_arg1, action_arg2 = get_action(actor_output_row)
 
                 if action == 0: # Dash
@@ -99,12 +101,15 @@ def keepPlaying(tid, port):
         num_iter = max(actor.iterations, critic.iterations)
         episode = 0
         while max(actor.iterations, critic.iterations) < MAX_ITER:
+            if GymSoccer.episode_over:
+                GymSoccer.episode_over = False
+                GymSoccer.env._reset()
             epsilon = calculate_epsilon(max(actor.iterations, critic.iterations))
             (total_reward, steps, status, extrinsic_reward) = playEpisode(GymSoccer, actor, critic, epsilon, True, tid)
             n_updates = int(np.floor(steps * UPDATE_RATIO))
             for i in xrange(n_updates):
                 update(sess, actor.replay_buffer, actor, critic)
-            GymSoccer.env._reset()
+            #GymSoccer.env._reset()
 
 def main():
 	keepPlaying(0, 6000)
