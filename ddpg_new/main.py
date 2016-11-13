@@ -12,6 +12,7 @@ def playSingleEpisode(game, actor, critic, epsilon):
         new_states, rewards, episode_over, _ = game.act(action, param1, param2)
         game.update()
         reward = game.reward()
+        print '[ddpg] reward=[%f]'%(reward)
         new_state = game.get_state()
         new_state_size = game.get_state_size()
 
@@ -25,14 +26,15 @@ def playSingleEpisode(game, actor, critic, epsilon):
     return game.total_reward, game.steps, game.status
 
 def run():
-    num_players = OFFENSE_AGENTS + OFFENSE_NPCS + DEFENSE_AGENTS + \
-        DEFENSE_NPCS + OFFENSE_DUMMIES + DEFENSE_DUMMIES + DEFENSE_CHASERS
-    state_dim = get_state_dim(num_players)
+    #num_players = OFFENSE_AGENTS + OFFENSE_NPCS + DEFENSE_AGENTS + \
+    #    DEFENSE_NPCS + OFFENSE_DUMMIES + DEFENSE_DUMMIES + DEFENSE_CHASERS
+    #state_dim = get_state_dim(num_players-1)
 
     with tf.Session() as sess:
         print '[ddpg] Establishing Game Environment ...'
         game = GymSoccerAgainstKeeperState(0)
         game.create_env()
+        state_dim = game.get_state_size()
 
         print '[ddpg] Creating actor / critic network ...'
         actor = ActorNetwork(sess, ACTOR_LEARNING_RATE, TAU, state_dim, ACTION_SIZE, PARAM_SIZE)
@@ -57,6 +59,9 @@ def run():
             #print actor.replay_buffer.size()
             epsilon = anneal_epsilon(num_iter)
             (total_reward, steps, status) = playSingleEpisode(game, actor, critic, epsilon)
+            print '[ddpg] Episode Summary -----'
+            print '  total_reward:[%f]'%(total_reward)
+            print '----------------------------'
             #print '\t[ddpg] total_reward:[%f], status:[%s]'%(total_reward, status)
             #print '[ddpg] Updating actor / critic networks ...'
             actor_critic(actor, critic)

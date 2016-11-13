@@ -19,10 +19,15 @@ def actor_critic(actor, critic, grad_type='invert'):
     target_actions = np.hstack((target_action, target_action_params))
     target_q_val = critic.predict_target(s2_batch, target_actions)
 
+    #print s2_batch, s2_batch.shape
+    #print target_actions, target_actions.shape
+    #print target_q_val, target_q_val.shape
+
     #y_i = []
     #for i in xrange(MINIBATCH_SIZE):
     #    y_i.append(r_batch[k] + GAMMA * target_q_val[k])
-    y_i = r_batch + GAMMA * target_q_val
+    y_i = r_batch.reshape((MINIBATCH_SIZE, 1)) + GAMMA * target_q_val
+    #print y_i.shape
 
     # Update critic by minimizing the loss
     predicted_q_val, opt = critic.train(s_batch, a_batch, y_i)
@@ -30,6 +35,10 @@ def actor_critic(actor, critic, grad_type='invert'):
 
     # Update the actor policy using the sampled policy gradient
     action_output, action_param_output = actor.predict(s_batch)
+
+    #print action_output, action_output.shape
+    #print action_param_output, action_param_output.shape
+
     action_grads_combined = critic.actor_gradients(s_batch, np.hstack((action_output, action_param_output)))
     action_grads = action_grads_combined[0][:,:ACTION_SIZE]
     action_param_grads = action_grads_combined[0][:,ACTION_SIZE:]
@@ -133,7 +142,8 @@ def anneal_epsilon(iter):
 
 # converts the actor output to semantic values for actions to use in gym soccer
 def output2action(actor_output):
-    actor_output[2] = -1000 ## we don't want to sample TACKLE
+    actor_output[2] = -1000 ## NOTE we don't want to sample TACKLE
+    actor_output[3] = -1000 ## NOTE we don't want to sample KICK
     action = np.argmax(actor_output[:ACTION_SIZE])
     p1, p2 = param_index(action)
     if p2 is None:

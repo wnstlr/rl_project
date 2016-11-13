@@ -28,7 +28,8 @@ class GymSoccerAgainstKeeperState():
         self.player_on_ball = None
 
     def create_env(self):
-        self.env = SoccerAgainstKeeperEnv()
+        self.env = SoccerEnv()
+        #self.env = SoccerAgainstKeeperEnv()
         self.env._render()
         self.update()
 
@@ -131,6 +132,9 @@ class GymSoccerAgainstKeeperState():
         return 0
 
     def reward(self):
+        # Simple reward of reaching the ball
+        return self.move_to_ball_reward()
+
         move_to_ball_reward = self.move_to_ball_reward()
         kick_to_goal_reward = 3 * self.kick_to_goal_reward()
         pass_reward = 3 * self.pass_reward()

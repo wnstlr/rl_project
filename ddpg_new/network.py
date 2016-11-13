@@ -66,9 +66,9 @@ class ActorNetwork():
 
     def update_target_network_params(self):
         self.sess.run(\
-            [self.target_newtork_params[i].assign(tf.mul(self.network_params[i], self.tau) + \
-            tf.mul(self.target_network_params[i], 1 - self.tau)) \
-            for i in xrange(len(self.target_network_params))])
+            [self.network_params_target[i].assign(tf.mul(self.network_params[i], self.tau) + \
+            tf.mul(self.network_params_target[i], 1 - self.tau)) \
+            for i in xrange(len(self.network_params_target))])
 
 
     def train(self, inputs, action_gradient, action_param_gradient):
@@ -130,10 +130,10 @@ class CriticNetwork():
         self.action_dim = action_dim
         self.action_param_dim = action_param_dim
 
-        self.inputs, self.output, self.actions = self.create()
+        self.inputs, self.actions, self.output = self.create()
         self.network_params = tf.trainable_variables()[num_actor_params:]
 
-        self.inputs_target, self.output_target, self.actions_target = self.create()
+        self.inputs_target, self.actions_target, self.output_target = self.create()
         self.network_params_target = tf.trainable_variables()[len(self.network_params)+num_actor_params:]
 
         self.predicted_q_val = tf.placeholder(tf.float32, [None, 1])
@@ -166,37 +166,37 @@ class CriticNetwork():
         output = tf.contrib.layers.fully_connected(inputs=layer4, \
             num_outputs=1, weights_initializer=w_init)
 
-        return states, output, actions
+        return states, actions, output
 
 
     def actor_gradients(self, inputs, actions):
-        self.sess.run(tf.gradient(self.out, self.actions), \
+        return self.sess.run(tf.gradients(self.output, self.actions), \
             feed_dict={ self.inputs: inputs,
                         self.actions: actions })
 
 
     def update_target_network_params(self):
         self.sess.run(\
-            [self.target_newtork_params[i].assign(tf.mul(self.network_params[i], self.tau) + \
-            tf.mul(self.target_network_params[i], 1 - self.tau)) \
-            for i in xrange(len(self.target_network_params))])
+            [self.network_params_target[i].assign(tf.mul(self.network_params[i], self.tau) + \
+            tf.mul(self.network_params_target[i], 1 - self.tau)) \
+            for i in xrange(len(self.network_params_target))])
 
 
     def train(self, inputs, actions, predicted_q_val):
-        self.sess.run([self.output, self.optimize], \
+        return self.sess.run([self.output, self.opt], \
             feed_dict={ self.inputs: inputs,
                         self.actions: actions,
                         self.predicted_q_val: predicted_q_val})
 
 
     def predict(self, inputs, actions):
-        self.sess.run(self.output, \
+        return self.sess.run(self.output, \
             feed_dict={ self.inputs: inputs,
                         self.actions: actions })
 
 
     def predict_target(self, inputs, actions):
-        self.sess.run(self.output_target, \
+        return self.sess.run(self.output_target, \
             feed_dict={ self.inputs_target: inputs,
                         self.actions_target: actions })
 

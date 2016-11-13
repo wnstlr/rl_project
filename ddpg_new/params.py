@@ -9,7 +9,7 @@ MOMENTUM = 0.95
 MOMENTUM_2 = 0.999
 MAX_NORM = 10
 # Base learning rate for the Actor network
-ACTOR_LEARNING_RATE = 0.00001
+ACTOR_LEARNING_RATE = 0.001
 # Base learning rate for the Critic Network
 CRITIC_LEARNING_RATE = 0.001
 # Discount factor
