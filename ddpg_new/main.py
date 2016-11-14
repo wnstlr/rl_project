@@ -20,6 +20,9 @@ def playSingleEpisode(game, actor, critic, epsilon):
             transition = (current_state, action_selected, reward, 0, new_state)
             episode_buffer.append(transition)
 
+    # Relabel the experiences
+    actor.replay_buffer.label(episode_buffer)
+
     # Store the tried experiences in the replay buffer
     actor.replay_buffer.addMultiple(episode_buffer)
 
@@ -48,12 +51,9 @@ def run():
         sess.run(tf.initialize_all_variables())
         num_iter = max(actor.iter, critic.iter)
 
+        saver = tf.train.Saver()
+
         print '[ddpg] Running iterations ...'
-
-        # epsilon = anneal_epsilon(num_iter)
-        # (total_reward, steps, status) = playSingleEpisode(game, actor, critic, epsilon)
-        # actor_critic(actor, critic)
-
         while num_iter < MAX_ITER:
             if game.episode_over:
                 game.reset(0)
@@ -85,6 +85,9 @@ def run():
 
             writer.add_summary(summary_str, num_iter)
             writer.flush()
+
+            if num_iter % 1000 == 0:
+                save_path = saver.save(sess, "%s/model_%d.ckpt"%(SUMMARY_DIR, num_iter))
 
 if __name__ == '__main__':
     run()
