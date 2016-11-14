@@ -140,7 +140,9 @@ class GymSoccerState():
 
     def reward(self):
         # Simple reward of reaching the ball
-        return self.move_to_ball_reward()
+        reward = self.move_to_ball_reward()
+        self.total_reward += reward
+        return reward
 
         move_to_ball_reward = self.move_to_ball_reward()
         kick_to_goal_reward = 3 * self.kick_to_goal_reward()
