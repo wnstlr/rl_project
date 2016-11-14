@@ -31,14 +31,18 @@ def run():
     #state_dim = get_state_dim(num_players-1)
 
     with tf.Session() as sess:
+
         print '[ddpg] Establishing Game Environment ...'
-        game = GymSoccerAgainstKeeperState(0)
+        game = GymSoccerState(0)
         game.create_env()
         state_dim = game.get_state_size()
 
         print '[ddpg] Creating actor / critic network ...'
-        actor = ActorNetwork(sess, ACTOR_LEARNING_RATE, TAU, state_dim, ACTION_SIZE, PARAM_SIZE)
-        critic = CriticNetwork(sess, CRITIC_LEARNING_RATE, TAU, state_dim, ACTION_SIZE, PARAM_SIZE, actor.get_num_params())
+        actor = ActorNetwork(sess, ACTOR_LEARNING_RATE, TAU, state_dim, ACTION_SIZE, PARAM_SIZE, SIMPLE)
+        critic = CriticNetwork(sess, CRITIC_LEARNING_RATE, TAU, state_dim, ACTION_SIZE, PARAM_SIZE, actor.get_num_params(), SIMPLE)
+
+        summary_ops, summary_vars = build_summaries()
+        writer = tf.train.SummaryWriter(SUMMARY_DIR, sess.graph)
 
         print '[ddpg] Initializing variables ...'
         sess.run(tf.initialize_all_variables())
@@ -60,11 +64,27 @@ def run():
             epsilon = anneal_epsilon(num_iter)
             (total_reward, steps, status) = playSingleEpisode(game, actor, critic, epsilon)
             print '[ddpg] Episode Summary -----'
+            print '  epsilon: [%f]'%(epsilon)
             print '  total_reward:[%f]'%(total_reward)
             print '----------------------------'
             #print '\t[ddpg] total_reward:[%f], status:[%s]'%(total_reward, status)
             #print '[ddpg] Updating actor / critic networks ...'
-            actor_critic(actor, critic)
+
+            # Start learning once buffer has more than MEMORY_THRESHOLD examples.
+            if actor.replay_buffer.size() < MEMORY_THRESHOLD:
+                continue
+
+            #print len(actor.network_params), len(actor.network_params_target)
+            predicted_q_val, loss = actor_critic(actor, critic)
+            qmax = np.max(predicted_q_val)
+            summary_str = sess.run(summary_ops, feed_dict={
+                summary_vars[0]: total_reward,
+                summary_vars[1]: qmax,
+                summary_vars[2]: loss
+            })
+
+            writer.add_summary(summary_str, num_iter)
+            writer.flush()
 
 if __name__ == '__main__':
     run()

@@ -6,9 +6,6 @@ import copy
 # Actor-Critic updates
 # ====================
 def actor_critic(actor, critic, grad_type='invert'):
-    # Start learning once buffer has more than MEMORY_THRESHOLD examples.
-    if actor.replay_buffer.size() < MEMORY_THRESHOLD:
-        return
 
     # Sample a random minibatch of MINIBATCH_SIZE transitions from buffer
     s_batch, a_batch, r_batch, t_batch, s2_batch = \
@@ -30,7 +27,7 @@ def actor_critic(actor, critic, grad_type='invert'):
     #print y_i.shape
 
     # Update critic by minimizing the loss
-    predicted_q_val, opt = critic.train(s_batch, a_batch, y_i)
+    predicted_q_val, opt, loss = critic.train(s_batch, a_batch, y_i)
     critic.iter += 1
 
     # Update the actor policy using the sampled policy gradient
@@ -68,6 +65,9 @@ def actor_critic(actor, critic, grad_type='invert'):
     # Update the target networks
     critic.update_target_network_params()
     actor.update_target_network_params()
+
+    return predicted_q_val, loss
+
 
 # =============================================
 # Gradient Modifications for bounded parameters
@@ -126,6 +126,7 @@ def zero_gradient(action_grads, action_param_grads, action_output, action_param_
 
     return action_grads_out, action_param_grads_out
 
+## TODO squashing gradient
 def squash_gradient(action_grads, action_param_grads, action_output, action_param_output):
     raise NotImplementedError
 
@@ -142,8 +143,12 @@ def anneal_epsilon(iter):
 
 # converts the actor output to semantic values for actions to use in gym soccer
 def output2action(actor_output):
-    actor_output[2] = -1000 ## NOTE we don't want to sample TACKLE
-    actor_output[3] = -1000 ## NOTE we don't want to sample KICK
+    if ENVTYPE == 'soccer':
+        actor_output[2] = -1000 ## NOTE we don't want to sample TACKLE
+        actor_output[3] = -1000 ## NOTE we don't want to sample KICK
+    else:
+        actor_output[2] = -1000 ## NOTE we don't want to sample TACKLE
+
     action = np.argmax(actor_output[:ACTION_SIZE])
     p1, p2 = param_index(action)
     if p2 is None:

@@ -3,9 +3,10 @@ import tensorflow as tf
 from replay_buffer import *
 import tflearn
 from params import *
+import copy
 
 class ActorNetwork():
-    def __init__(self, sess, lr, tau, state_dim, action_dim, action_param_dim):
+    def __init__(self, sess, lr, tau, state_dim, action_dim, action_param_dim, simple):
         self.sess = sess
         self.lr = lr
         self.tau = tau
@@ -14,6 +15,7 @@ class ActorNetwork():
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_param_dim = action_param_dim
+        self.simple = simple
 
         # Create Actor Network
         self.inputs, self.action_output, self.action_param_output = self.create()
@@ -35,7 +37,6 @@ class ActorNetwork():
         grad_param_action = [(self.actor_param_gradients[i], self.network_params[i]) for i in xrange(len(self.network_params))]
         self.opt_action_param = self.opt.apply_gradients(grad_param_action)
 
-
     def create(self):
         def leaky_relu(x):
             return tflearn.leaky_relu(x, alpha=0.01)
@@ -43,23 +44,37 @@ class ActorNetwork():
         inputs = tf.placeholder(tf.float32, shape=[None, self.state_dim])
         w_init = tf.random_normal_initializer(stddev=0.01)
 
-        layer1 = tf.contrib.layers.fully_connected(inputs=inputs, \
-            num_outputs=1024, activation_fn=leaky_relu, weights_initializer=w_init)
+        if not self.simple:
+            layer1 = tf.contrib.layers.fully_connected(inputs=inputs, \
+                num_outputs=1024, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
-            num_outputs=512, activation_fn=leaky_relu, weights_initializer=w_init)
+            layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
+                num_outputs=512, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        layer3 = tf.contrib.layers.fully_connected(inputs=layer2, \
-            num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
+            layer3 = tf.contrib.layers.fully_connected(inputs=layer2, \
+                num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        layer4 = tf.contrib.layers.fully_connected(inputs=layer3, \
-            num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
+            layer4 = tf.contrib.layers.fully_connected(inputs=layer3, \
+                num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        action_output = tf.contrib.layers.fully_connected(inputs=layer4, \
-            num_outputs=self.action_dim, weights_initializer=w_init)
+            action_output = tf.contrib.layers.fully_connected(inputs=layer4, \
+                num_outputs=self.action_dim, weights_initializer=w_init)
 
-        action_param_output = tf.contrib.layers.fully_connected(inputs=layer4, \
-            num_outputs=self.action_param_dim, weights_initializer=w_init)
+            action_param_output = tf.contrib.layers.fully_connected(inputs=layer4, \
+                num_outputs=self.action_param_dim, weights_initializer=w_init)
+
+        else:
+            layer1 = tf.contrib.layers.fully_connected(inputs=inputs, \
+                num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
+
+            layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
+                num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
+
+            action_output = tf.contrib.layers.fully_connected(inputs=layer2, \
+                num_outputs=self.action_dim, weights_initializer=w_init)
+
+            action_param_output = tf.contrib.layers.fully_connected(inputs=layer2, \
+                num_outputs=self.action_param_dim, weights_initializer=w_init)
 
         return inputs, action_output, action_param_output
 
@@ -121,7 +136,7 @@ class ActorNetwork():
 
 
 class CriticNetwork():
-    def __init__(self, sess, lr, tau, state_dim, action_dim, action_param_dim, num_actor_params):
+    def __init__(self, sess, lr, tau, state_dim, action_dim, action_param_dim, num_actor_params, simple):
         self.sess = sess
         self.lr = lr
         self.tau = tau
@@ -129,7 +144,9 @@ class CriticNetwork():
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_param_dim = action_param_dim
+        self.simple = simple
 
+        # Create Critic Network
         self.inputs, self.actions, self.output = self.create()
         self.network_params = tf.trainable_variables()[num_actor_params:]
 
@@ -151,20 +168,30 @@ class CriticNetwork():
 
         w_init = tf.random_normal_initializer(stddev=0.01)
 
-        layer1 = tf.contrib.layers.fully_connected(inputs=inputs_merged, \
-            num_outputs=1024, activation_fn=leaky_relu, weights_initializer=w_init)
+        if not self.simple:
+            layer1 = tf.contrib.layers.fully_connected(inputs=inputs_merged, \
+                num_outputs=1024, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
-            num_outputs=512, activation_fn=leaky_relu, weights_initializer=w_init)
+            layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
+                num_outputs=512, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        layer3 = tf.contrib.layers.fully_connected(inputs=layer2, \
-            num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
+            layer3 = tf.contrib.layers.fully_connected(inputs=layer2, \
+                num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        layer4 = tf.contrib.layers.fully_connected(inputs=layer3, \
-            num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
+            layer4 = tf.contrib.layers.fully_connected(inputs=layer3, \
+                num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
 
-        output = tf.contrib.layers.fully_connected(inputs=layer4, \
-            num_outputs=1, weights_initializer=w_init)
+            output = tf.contrib.layers.fully_connected(inputs=layer4, \
+                num_outputs=1, weights_initializer=w_init)
+        else:
+            layer1 = tf.contrib.layers.fully_connected(inputs=inputs_merged, \
+                num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
+
+            layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
+                num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
+
+            output = tf.contrib.layers.fully_connected(inputs=layer2, \
+                num_outputs=1, weights_initializer=w_init)
 
         return states, actions, output
 
@@ -183,7 +210,7 @@ class CriticNetwork():
 
 
     def train(self, inputs, actions, predicted_q_val):
-        return self.sess.run([self.output, self.opt], \
+        return self.sess.run([self.output, self.opt, self.loss], \
             feed_dict={ self.inputs: inputs,
                         self.actions: actions,
                         self.predicted_q_val: predicted_q_val})
@@ -200,17 +227,18 @@ class CriticNetwork():
             feed_dict={ self.inputs_target: inputs,
                         self.actions_target: actions })
 
-
 # ===========================
 #   Tensorflow Summary Ops
 # ===========================
 def build_summaries():
     episode_reward = tf.Variable(0.)
-    tf.scalar_summary("Reward", episode_reward)
+    tf.summary.scalar("Reward", episode_reward)
     episode_ave_max_q = tf.Variable(0.)
-    tf.scalar_summary("Qmax Value", episode_ave_max_q)
+    tf.summary.scalar("Qmax Value", episode_ave_max_q)
+    loss = tf.Variable(0.)
+    tf.summary.scalar("Loss", loss)
 
-    summary_vars = [episode_reward, episode_ave_max_q]
+    summary_vars = [episode_reward, episode_ave_max_q, loss]
     summary_ops = tf.merge_all_summaries()
 
     return summary_ops, summary_vars

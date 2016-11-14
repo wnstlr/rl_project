@@ -7,8 +7,8 @@ from gym_soccer.envs.soccer_against_keeper import *
 
 pass_vel_threshold = -0.5
 
-class GymSoccerAgainstKeeperState():
-    def __init__(self, unum):
+class GymSoccerState():
+    def __init__(self, unum, type='soccer'):
         self.old_ball_prox = 0
         self.ball_prox_change = 0
         self.old_kickable = 0
@@ -26,10 +26,17 @@ class GymSoccerAgainstKeeperState():
         self.pass_vel_threshold = -0.5
         self.old_player_on_ball = None
         self.player_on_ball = None
+        self.type = type
 
     def create_env(self):
-        self.env = SoccerEnv()
-        #self.env = SoccerAgainstKeeperEnv()
+        if self.type == 'soccer':
+            self.env = SoccerEnv()
+        elif self.type == 'socceragainstkeeper':
+            self.env = SoccerAgainstKeeperEnv()
+        elif self.type == 'socceremptygoal':
+            self.env = SoccerEmptyGoalEnv()
+        else:
+            raise ValueError('input type for soccer env is not valid. Must be one of [soccer, socceragainstkeeper, socceremptygoal].')
         self.env._render()
         self.update()
 

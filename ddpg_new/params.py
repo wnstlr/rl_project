@@ -16,7 +16,7 @@ CRITIC_LEARNING_RATE = 0.001
 GAMMA = 0.99
 # Soft target update param
 TAU = 0.001
-EXPLORE_ITER = 10000
+EXPLORE_ITER = 100
 BETA = 0.5
 STATE_INPUT_COUNT = 1
 
@@ -52,9 +52,9 @@ TEAM_NAME = "base_left"
 PLAY_GOALIE = False
 RECORD_DIR = ""
 
-##
+# ===============
 # Params for main
-##
+# ===============
 MAX_ITER = 10000000
 UPDATE_RATIO = 0.1
 
@@ -66,3 +66,10 @@ DEFENSE_NPCS = 0
 OFFENSE_DUMMIES = 0
 DEFENSE_DUMMIES = 0
 DEFENSE_CHASERS = 0
+
+# Specify which GymSoccer env to use:
+# soccer, socceragainstkeeper, socceremptygoal
+ENVTYPE = 'soccer'
+
+# If true, train on a simpler network structure
+SIMPLE = True
