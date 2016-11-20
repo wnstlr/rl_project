@@ -40,13 +40,13 @@ class ReplayBuffer(object):
     def label(self, experiences):
         assert len(experiences) > 0
         terminal = experiences[len(experiences) - 1]
-        terminal = (terminal[0], terminal[1], terminal[2], terminal[2], terminal[4])
+        experiences[len(experiences) - 1] = (terminal[0], terminal[1], terminal[2], terminal[2], terminal[4])
         for i in xrange(len(experiences) - 2, 0, -1):
             experience = experiences[i]
             reward = experience[2]
             target = (experiences[i+1])[3]
             total_reward = reward + self.gamma * target
-            experience = (experience[0], experience[1], experience[2], total_reward, experience[4])
+            experiences[i] = (experience[0], experience[1], experience[2], total_reward, experience[4])
 	
     def size(self):
         return self.count

@@ -1,0 +1,108 @@
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:52:06,350] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:52:06,352] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:52:58,477] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:52:58,480] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:53:51,568] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:53:51,571] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:54:44,413] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:54:44,416] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:55:54,454] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:55:54,456] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:57:09,441] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:57:09,449] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:58:20,139] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:58:20,150] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:59:38,643] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 17:59:38,670] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 18:00:38,906] Error encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'
+[2016-11-19 18:00:38,910] Error encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef.
+'NoneType' object has no attribute 'name'

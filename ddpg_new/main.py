@@ -17,7 +17,7 @@ def playSingleEpisode(game, actor, critic, epsilon):
         new_state_size = game.get_state_size()
 
         if game.status == hfo_py.IN_GAME:
-            transition = (current_state, action_selected, reward, 0, new_state)
+            transition = (current_state, action_selected, reward, 0, new_states)
             episode_buffer.append(transition)
 
     # Relabel the experiences

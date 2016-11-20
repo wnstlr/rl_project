@@ -1,0 +1,17 @@
+base_left: init ok.  unum: 11 side: l
+base_left 11:  KickTable created.
+base_left 11: [0, 1]  prepare see synch
+base_left 11: [0, 5]  see synch.
+Got quit from agent.
+base_left 11: finished.
+base_left 11: [199960, 0]  WARNING. no turn_neck.
+base_left 11: finished.
+
+base_left 11:  KickTable created.
+base_left 11: [0, 1]  prepare see synch
+base_left 11: [0, 6]  see synch.
+Got quit from agent.
+base_left 11: finished.
+base_left 11: [2194555, 0]  WARNING. no turn_neck.
+base_left 11: finished.
+Now with 100000 iterations

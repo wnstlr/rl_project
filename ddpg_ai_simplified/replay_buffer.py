@@ -37,7 +37,7 @@ class ReplayBuffer(object):
             s2 = experience[4]
             self.add(s, a, r, t, s2)
 
-    def label(self, experiences):
+    def addWithLabel(self, experiences):
         assert len(experiences) > 0
         terminal = experiences[len(experiences) - 1]
         experiences[len(experiences) - 1] = (terminal[0], terminal[1], terminal[2], terminal[2], terminal[4])
@@ -47,7 +47,7 @@ class ReplayBuffer(object):
             target = (experiences[i+1])[3]
             total_reward = reward + self.gamma * target
             experiences[i] = (experience[0], experience[1], experience[2], total_reward, experience[4])
-        return experiences
+        self.addMultiple(experiences)
     
     def size(self):
         return self.count

@@ -77,9 +77,15 @@ class HFOState(object):
             reward += self.ball_prox_change
         '''
         '''
+        Attempt to reward getting the ball
         if self.kickable_change >= 1 and not self.got_kickable_reward:
             reward += 1.0
             self.got_kickable_reward = True
+        '''
+        '''
+        Attempt to punish moving away from ball after getting it
+        elif self.kickable_change <= -1 and self.got_kickable_reward:
+            reward -= 1.0
         '''
         return reward
     '''
