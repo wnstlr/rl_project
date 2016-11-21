@@ -144,6 +144,7 @@ def anneal_epsilon(iter):
 # converts the actor output to semantic values for actions to use in gym soccer
 def output2action(actor_output):
     if ENVTYPE == 'soccer':
+        actor_output[1] = -1000 ## NOTE we don't want to sample TURN
         actor_output[2] = -1000 ## NOTE we don't want to sample TACKLE
         actor_output[3] = -1000 ## NOTE we don't want to sample KICK
     else:
@@ -163,9 +164,9 @@ def output2action(actor_output):
 # converts action and params int values to string
 def action2string(action, param1, param2):
     if action == 0: #DASH
-        res = 'action [%s] : [%0.2f, %0.2f]'%('DASH', param1, param2)
+        res = 'action [%s] : [%f, %f]'%('DASH', param1, param2)
     elif action == 1: #TURN
-        res = 'action [%s] : [%0.2f]'%('TURN', param1)
+        res = 'action [%s] : [%f]'%('TURN', param1)
     elif action == 2: #TACKLE
         res = 'action [%s] : [%0.2f]'%('TACKLE', param1)
     elif action == 3: #KICK

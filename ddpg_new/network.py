@@ -65,15 +65,15 @@ class ActorNetwork():
 
         else:
             layer1 = tf.contrib.layers.fully_connected(inputs=inputs, \
-                num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
+                num_outputs=1024, activation_fn=leaky_relu, weights_initializer=w_init)
 
-            layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
-                num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
+            #layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
+            #    num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
 
-            action_output = tf.contrib.layers.fully_connected(inputs=layer2, \
+            action_output = tf.contrib.layers.fully_connected(inputs=layer1, \
                 num_outputs=self.action_dim, weights_initializer=w_init)
 
-            action_param_output = tf.contrib.layers.fully_connected(inputs=layer2, \
+            action_param_output = tf.contrib.layers.fully_connected(inputs=layer1, \
                 num_outputs=self.action_param_dim, weights_initializer=w_init)
 
         return inputs, action_output, action_param_output
@@ -185,12 +185,12 @@ class CriticNetwork():
                 num_outputs=1, weights_initializer=w_init)
         else:
             layer1 = tf.contrib.layers.fully_connected(inputs=inputs_merged, \
-                num_outputs=256, activation_fn=leaky_relu, weights_initializer=w_init)
+                num_outputs=1024, activation_fn=leaky_relu, weights_initializer=w_init)
 
-            layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
-                num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
+            #layer2 = tf.contrib.layers.fully_connected(inputs=layer1, \
+            #    num_outputs=128, activation_fn=leaky_relu, weights_initializer=w_init)
 
-            output = tf.contrib.layers.fully_connected(inputs=layer2, \
+            output = tf.contrib.layers.fully_connected(inputs=layer1, \
                 num_outputs=1, weights_initializer=w_init)
 
         return states, actions, output

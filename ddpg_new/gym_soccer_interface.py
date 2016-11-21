@@ -144,14 +144,14 @@ class GymSoccerState():
         self.total_reward += reward
         return reward
 
-        move_to_ball_reward = self.move_to_ball_reward()
-        kick_to_goal_reward = 3 * self.kick_to_goal_reward()
-        pass_reward = 3 * self.pass_reward()
-        eot_reward = self.EOT_reward()
-        reward = move_to_ball_reward + kick_to_goal_reward + eot_reward
-        self.extrinsic_reward += eot_reward
-        self.total_reward += reward
-        return reward
+        # move_to_ball_reward = self.move_to_ball_reward()
+        # kick_to_goal_reward = 3 * self.kick_to_goal_reward()
+        # pass_reward = 3 * self.pass_reward()
+        # eot_reward = self.EOT_reward()
+        # reward = move_to_ball_reward + kick_to_goal_reward + eot_reward
+        # self.extrinsic_reward += eot_reward
+        # self.total_reward += reward
+        # return reward
 
     def get_state(self):
         return self.env.env.getState()

@@ -16,7 +16,7 @@ CRITIC_LEARNING_RATE = 0.001
 GAMMA = 0.99
 # Soft target update param
 TAU = 0.001
-EXPLORE_ITER = 10000
+EXPLORE_ITER = 100
 BETA = 0.5
 STATE_INPUT_COUNT = 1
 
@@ -73,3 +73,9 @@ ENVTYPE = 'soccer'
 
 # If true, train on a simpler network structure
 SIMPLE = True
+
+# If true, continue from the last checkpoint
+CONTINUE = False
+
+# If true, test the model.
+TEST = False
