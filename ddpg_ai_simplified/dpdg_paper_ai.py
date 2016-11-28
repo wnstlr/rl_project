@@ -9,6 +9,7 @@ from replay_buffer import ReplayBuffer
 from hfo_interface import *
 import cPickle
 import gzip
+import shutil, errno
 
 CONFIG_DIR = "bin/teams/base/config/formations-dt"
 SERVER_ADDR = "localhost"
@@ -16,21 +17,28 @@ TEAM_NAME = "base_left"
 PLAY_GOALIE = False
 RECORD_DIR = ""
 # Lowered to 100000 from 10000000 as training only for dashing should not take too long
-MAX_ITER = 100000
+MAX_ITER = 30000
 TESTING = True
 Q_DISPLAY_FREQ = 1000
 EVAL_GAMES = 100
 UPDATE_RATIO = 0.1
-DASH_PARAMS_ONLY = True
+DASH_PARAMS_ONLY = False
+DASH_TURN_ONLY = True
+RESTORE = True
 
 if DASH_PARAMS_ONLY:
     from ddpg_dash import *
     EVAL_FREQ = 1000
-    EXPLORE_ITER = 100
+    EXPLORE_ITER = 1000
+
+elif DASH_TURN_ONLY:
+    from ddpg_dash_turn import *
+    EVAL_FREQ = 1000
+    EXPLORE_ITER = 1000
 
 else:
     from ddpg import *
-    EVAL_FREQ = 10000
+    EVAL_FREQ = 1000
     EXPLORE_ITER = 1000
 
 EPSILON = 0.1
@@ -42,18 +50,27 @@ DEFENSE_NPCS = 0
 OFFENSE_DUMMIES = 0
 DEFENSE_DUMMIES = 0
 DEFENSE_CHASERS = 0 
+LOAD_PATH = "/home/azzhao/HFO/Models_and_data/Models30000_dashturn_try2_1000explore_no_x_limits_10000restore/model28399.ckpt"
+LOG_PATH = "Models_and_data/Models60000_dashturn_try2_1000explore_no_x_limits_30000restore/"
 
+def copyAnything(src, dst):
+    try:
+        shutil.copytree(src, dst)
+    except OSError as exc: # python >2.5
+        if exc.errno == errno.ENOTDIR:
+            shutil.copy(src, dst)
+        else: raise
+
+copyAnything("ddpg_ai_simplified", LOG_PATH)
+evalFile = open(LOG_PATH + "eval_trials.txt", "w+", 0)
+replay_buffer_file = gzip.open(LOG_PATH + "replay_buffer.pkl.gz", "wb", 0)
+actionFile = open(LOG_PATH + "actions_eval.txt", "w+", 0)
 # averageQFile = open("q_values_longer_correct_sign_long_run.txt", "w+", 0)
-settingsFile = open("settings_dash_only_params_iter100000_explore100_modreward2.txt", "w+", 0)
-settingsFile.write(str(DASH_PARAMS_ONLY) + " " + str(MAX_ITER) + " " + str(EVAL_FREQ) + " " + str(EXPLORE_ITER))
-settingsFile.close()
-evalFile = open("eval_trials_longer_correct_sign_dash_only_params_iter100000_explore100_modreward2.txt", "w+", 0)
-replay_buffer_file = gzip.open("replay_buffer_iter100000_explore100_modreward2.pkl.gz", "wb", 0)
-# actionFile = open("actions_eval_longer_correct_sign_dash_only_params_iter100000_explore100_modreward2.txt", "w+", 0)
+
 # trainingActionReward = open("actions_training_dash_only_2.txt", "w+", 0)
 # trainingEstimatedQValues = open("training_estimated_q_values_2.txt", "w+", 0)
 # distanceToBallFile = open("distance_to_ball.txt", "w+")
-
+        
 def calculate_epsilon(iterations):
 	if iterations < EXPLORE_ITER:
 		return 1.0 - (1.0 - EPSILON) * (iterations / (EXPLORE_ITER + 0.0))
@@ -91,11 +108,11 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, update, tid):
                 action, action_arg1, action_arg2 = 0, actor_output[0], actor_output[1]
             else:
                 action, action_arg1, action_arg2 = get_action(actor_output)
-            '''
+            
             if not update:
                 actionFile.write(str(action) + " " + "{:.8f}".format(action_arg1) + " " + "{:.8f}".format(action_arg2))
                 actionFile.write("\n")
-            '''
+            
             '''
             game_state = HFO.getState()
             ball_ang_sin_rad = game_state[51]
@@ -141,10 +158,10 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, update, tid):
         '''
     # print "Total Reward: ", game.total_reward
     # assert game.total_reward != 0
-    '''
+    
     else:
         actionFile.write(str(actorNet.iterations) + "\n\n")
-    '''
+    
     return game.total_reward, game.steps, game.status, game.extrinsic_reward, initial_dist, kickable
 
 def keepPlaying(tid, port):
@@ -156,6 +173,11 @@ def keepPlaying(tid, port):
                 ACTOR_LEARNING_RATE, TAU)
             critic = CriticNetwork(sess, num_features, DASH_PARAM_SIZE, tid, \
                 CRITIC_LEARNING_RATE, TAU, actor.get_num_trainable_vars())
+        elif DASH_TURN_ONLY:
+            actor = ActorNetwork(sess, num_features, ACTION_SIZE, tid, \
+                ACTOR_LEARNING_RATE, TAU)
+            critic = CriticNetwork(sess, num_features, ACTION_SIZE, tid, \
+                CRITIC_LEARNING_RATE, TAU, actor.get_num_trainable_vars())
         else:
             actor = ActorNetwork(sess, num_features, ACTION_SIZE, PARAM_SIZE, tid, \
                 ACTOR_LEARNING_RATE, TAU)
@@ -166,6 +188,8 @@ def keepPlaying(tid, port):
         time.sleep(5)
         sess.run(tf.initialize_all_variables())
         saver = tf.train.Saver(max_to_keep=None)
+        if RESTORE:
+            saver.restore(sess, LOAD_PATH)
         actor.unum = Player._fields_[1][1]
         critic.unum = Player._fields_[1][1]
         num_iter = max(actor.iterations, critic.iterations)
@@ -173,7 +197,10 @@ def keepPlaying(tid, port):
         eval_iter = max(actor.iterations, critic.iterations)
         num_eval = 0
         while max(actor.iterations, critic.iterations) < MAX_ITER:
-            epsilon = calculate_epsilon(max(actor.iterations, critic.iterations))
+            if not RESTORE:
+                epsilon = calculate_epsilon(max(actor.iterations, critic.iterations))
+            else:
+                epsilon = EPSILON
             total_reward, steps, status, extrinsic_reward, initial_dist, kickable = playEpisode(HFO, actor, critic, epsilon, True, tid)
             n_updates = int(np.floor(steps * UPDATE_RATIO))
             ave_q = 0
@@ -191,7 +218,7 @@ def keepPlaying(tid, port):
             if TESTING and actor.iterations >= eval_iter + EVAL_FREQ:
                 num_eval += 1
                 if num_eval % 10 == 0 or actor.iterations + EVAL_FREQ >= MAX_ITER:
-                    save_path = saver.save(sess, "Models100000reward2/model" + str(actor.iterations) + ".ckpt")
+                    save_path = saver.save(sess, LOG_PATH + "model" + str(28399 + actor.iterations) + ".ckpt")
                     if actor.iterations + EVAL_FREQ >= MAX_ITER:
                         cPickle.dump(actor.replay_buffer, replay_buffer_file, -1)
                 eval_game_rewards = []
@@ -236,7 +263,7 @@ def keepPlaying(tid, port):
         replay_buffer_file.close()
         evalFile.close()
         # averageQFile.close()
-        # actionFile.close()
+        actionFile.close()
         # trainingActionReward.close()
         # trainingEstimatedQValues.close()
         # distanceToBallFile.close()

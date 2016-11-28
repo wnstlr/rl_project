@@ -7,6 +7,9 @@ from collections import deque
 
 from replay_buffer import ReplayBuffer
 from hfo_interface import *
+import cPickle
+import gzip
+import pprint
 
 CONFIG_DIR = "bin/teams/base/config/formations-dt"
 SERVER_ADDR = "localhost"
@@ -14,11 +17,15 @@ TEAM_NAME = "base_left"
 PLAY_GOALIE = False
 RECORD_DIR = ""
 EVAL_GAMES = 100
-DASH_PARAMS_ONLY = True
-LOAD_PATH = "Models100000reward2/model99521.ckpt"
+DASH_PARAMS_ONLY = False
+DASH_TURN_ONLY = True
+LOAD_PATH = "Models_and_data/Models60000_dashturn_try2_1000explore_no_x_limits_30000restore/model57977.ckpt"
 
 if DASH_PARAMS_ONLY:
     from ddpg_dash import *
+
+elif DASH_TURN_ONLY:
+    from ddpg_dash_turn import *
 
 else:
     from ddpg import *
@@ -80,11 +87,22 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, tid):
 def keepPlaying(tid, port):
     num_players = OFFENSE_AGENTS + OFFENSE_NPCS + DEFENSE_AGENTS + DEFENSE_NPCS + OFFENSE_DUMMIES + DEFENSE_DUMMIES + DEFENSE_CHASERS
     num_features = num_state_features(num_players)
+    '''
+    pkl_file = gzip.open("replay_buffer_iter100000_explore100_modreward2.pkl.gz", "rb")
+    data1 = cPickle.load(pkl_file)
+    pprint.pprint(data1)
+    pkl_file.close()
+    '''
     with tf.Session() as sess:
         if DASH_PARAMS_ONLY:
             actor = ActorNetwork(sess, num_features, DASH_PARAM_SIZE, tid, \
                 ACTOR_LEARNING_RATE, TAU)
             critic = CriticNetwork(sess, num_features, DASH_PARAM_SIZE, tid, \
+                CRITIC_LEARNING_RATE, TAU, actor.get_num_trainable_vars())
+        elif DASH_TURN_ONLY:
+            actor = ActorNetwork(sess, num_features, ACTION_SIZE, tid, \
+                ACTOR_LEARNING_RATE, TAU)
+            critic = CriticNetwork(sess, num_features, ACTION_SIZE, tid, \
                 CRITIC_LEARNING_RATE, TAU, actor.get_num_trainable_vars())
         else:
             actor = ActorNetwork(sess, num_features, ACTION_SIZE, PARAM_SIZE, tid, \

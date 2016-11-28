@@ -38,7 +38,7 @@ STATE_INPUT_COUNT = 1
 BUFFER_SIZE = 500000
 MEMORY_THRESHOLD = 1000
 MINIBATCH_SIZE = 32
-DASH_PARAM_SIZE = 2
+ACTION_SIZE = 4
 
 
 # ===========================
@@ -65,39 +65,67 @@ class ActorNetwork(object):
         self.iterations = 0
 
         # Actor Network
-        layer_sizes = [self.state_size, 1024, self.action_dim]
+        layer_sizes = [self.state_size, 1024, 1]
         weights_initial = self.actor_initial_weights(layer_sizes)
-        self.inputs, self.action_out = self.create_actor_network(weights_initial, layer_sizes)
-
+        self.inputs, self.dash_turn = self.create_actor_network(weights_initial, layer_sizes)
+        
+        self.dashturn_network_params = tf.trainable_variables()
+        
+        self.target_inputs, self.target_dash_turn = self.create_actor_network(weights_initial, layer_sizes)
+        
+        self.target_dashturn_network_params = tf.trainable_variables()[len(self.dashturn_network_params):]
+        for i in xrange(len(self.target_dashturn_network_params)):
+            self.target_dashturn_network_params[i].assign(self.dashturn_network_params[i])
+        
+        self.update_dashturn_target_network_params = \
+            [self.target_dashturn_network_params[i].assign(tf.mul(self.dashturn_network_params[i], self.tau) + \
+                tf.mul(self.target_dashturn_network_params[i], 1. - self.tau))
+                for i in range(len(self.target_dashturn_network_params))]
+        
+        self.all_dashturn_network_params = tf.trainable_variables()
+        
+        layer_sizes = [self.state_size, 1024, self.action_dim - 1]
+        weights_initial = self.actor_initial_weights(layer_sizes)
+        self.inputs_2, self.action_out = self.create_actor_network(weights_initial, layer_sizes)
+        
         self.network_params = tf.trainable_variables()
-
         # Target Network
-        self.target_inputs, self.target_action_out = self.create_actor_network(weights_initial, layer_sizes)
+        self.target_inputs_2, self.target_action_out = self.create_actor_network(weights_initial, layer_sizes)
         
         self.target_network_params = tf.trainable_variables()[len(self.network_params):]
         for i in xrange(len(self.target_network_params)):
-            self.target_network_params[i].assign(self.network_params[i])
+            self.target_network_params[i].assign(self.network_params[len(self.all_dashturn_network_params) + i])
         # Op for periodically updating target network with online network weights
         self.update_target_network_params = \
-            [self.target_network_params[i].assign(tf.mul(self.network_params[i], self.tau) + \
+            [self.target_network_params[i].assign(tf.mul(self.network_params[len(self.all_dashturn_network_params) + i], self.tau) + \
                 tf.mul(self.target_network_params[i], 1. - self.tau))
                 for i in range(len(self.target_network_params))]
-
+        
         # This gradient will be provided by the critic network
-        self.action_gradient = tf.placeholder(tf.float32, [None, self.action_dim])
+        self.dashturn_grad = tf.placeholder(tf.float32, [None, 1])
+        self.action_gradient = tf.placeholder(tf.float32, [None, self.action_dim - 1])
         
         # Combine the gradients here 
         assert self.action_out != None
         assert self.network_params != None
         assert self.action_gradient != None
-        self.actor_gradients = tf.gradients(self.action_out, self.network_params, -self.action_gradient)
+        '''
+        self.networks_params = \
+            [tf.concat(1, [self.dashturn_network_params[i], self.network_params[len(self.all_dashturn_network_params) + i]])
+                for i in range(len(self.dashturn_network_params))]
+        
+        print self.networks_params
+        '''
+        self.actor_gradients = tf.gradients(self.action_out, self.network_params[len(self.all_dashturn_network_params):], -self.action_gradient)
+        self.dashturn_gradients = tf.gradients(self.dash_turn, self.dashturn_network_params, -self.dashturn_grad)
         
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2)
         # self.optimizer = tf.train.AdagradOptimizer(self.learning_rate)
         assert self.actor_gradients != None
-        self.optimize = self.optimizer.apply_gradients(zip(self.actor_gradients, self.network_params))
+        self.optimize = self.optimizer.apply_gradients(zip(self.actor_gradients, self.network_params[len(self.all_dashturn_network_params):]))
+        self.optimize_dashturn = self.optimizer.apply_gradients(zip(self.dashturn_gradients, self.dashturn_network_params))
 
-        self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
+        self.num_trainable_vars = len(self.network_params) + len(self.target_network_params) + len(self.dashturn_network_params) + len(self.target_dashturn_network_params)
     
     def actor_initial_weights(self, layer_sizes):
         weights_initial = []
@@ -121,35 +149,45 @@ class ActorNetwork(object):
             net = tflearn.activation(tflearn.activations.leaky_relu(net, 0.01))
         
         # Final layer weights are init to Normal(0, 0.01)
-        action_out = tflearn.fully_connected(net, self.action_dim, weights_init = weights_initial[len(weights_initial) - 1])
+        action_out = tflearn.fully_connected(net, layer_sizes[len(layer_sizes) - 1], weights_init = weights_initial[len(weights_initial) - 1])
         return inputs, action_out
 
-    def train(self, inputs, action_gradient):
-        self.sess.run(self.optimize, feed_dict={
+    def train(self, inputs, action_gradient, dashturn_gradient):
+        self.sess.run([self.optimize_dashturn, self.optimize], feed_dict={
             self.inputs: inputs,
-            self.action_gradient: action_gradient
+            self.inputs_2: inputs,
+            self.action_gradient: action_gradient,
+            self.dashturn_grad: dashturn_gradient
         })
 
     def predict(self, inputs):
-        return self.sess.run(self.action_out, feed_dict={
-            self.inputs: inputs
+        predicted = self.sess.run([self.dash_turn, self.action_out], feed_dict={
+            self.inputs: inputs,
+            self.inputs_2: inputs
         })
-
+        return np.concatenate((predicted[0], predicted[1]), 1)
+    
     def predict_target(self, inputs):
-        return self.sess.run(self.target_action_out, feed_dict={
-            self.target_inputs: inputs
+        predicted = self.sess.run([self.target_dash_turn, self.target_action_out], feed_dict={
+            self.target_inputs: inputs,
+            self.target_inputs_2: inputs
         })
+        # print predicted[0].shape, predicted[1].shape
+        return np.concatenate((predicted[0], predicted[1]), 1)
 
     def update_target_network(self):
+        self.sess.run(self.update_dashturn_target_network_params)
         self.sess.run(self.update_target_network_params)
 
     def get_num_trainable_vars(self):
         return self.num_trainable_vars
     
     def get_random_actor_output(self):
-        random_action = np.zeros(DASH_PARAM_SIZE)
-        random_action[0] = np.random.uniform(-100.0, 100.0)
-        random_action[1] = np.random.uniform(-180.0, 180.0)
+        random_action = np.zeros(self.action_dim)
+        random_action[0] = np.random.uniform(0, 1)
+        random_action[1] = np.random.uniform(-100.0, 100.0)
+        random_action[2] = np.random.uniform(-180.0, 180.0)
+        random_action[3] = np.random.uniform(-180.0, 180.0)
         return random_action
 
     def select_action(self, state, epsilon):
@@ -159,14 +197,13 @@ class ActorNetwork(object):
         assert epsilon >= 0.0 and epsilon <= 1.0
         assert len(states) <= MINIBATCH_SIZE
         if np.random.uniform() < epsilon:
-            actor_output = np.zeros((len(states), DASH_PARAM_SIZE))
+            actor_output = np.zeros((len(states), self.action_dim))
             for i in xrange(len(actor_output)):
                 actor_output[i] = self.get_random_actor_output()
             # print actor_output
             return actor_output
-        actor_output = self.predict(states)
         # print actor_output
-        return actor_output
+        return self.predict(states)
 
 class CriticNetwork(object):
     """ 
@@ -261,6 +298,11 @@ class CriticNetwork(object):
     def update_target_network(self):
         self.sess.run(self.update_target_network_params)
 
+def get_action(actor_output):
+    if actor_output[0] <= 0.5:
+        return 0, actor_output[1], actor_output[2]
+    else:
+        return 1, actor_output[3], 0
 # ===========================
 #   Tensorflow Summary Ops
 # ===========================
@@ -312,8 +354,11 @@ def update(sess, replay_buffer, actor, critic):
     action_out = actor.predict(s_batch)
     grads_action = critic.action_gradients(s_batch, action_out)[0]
     for n in xrange(MINIBATCH_SIZE):
-        for h in xrange(DASH_PARAM_SIZE):
+        for h in xrange(ACTION_SIZE):
             if h == 0:
+                maximum = 1.0
+                mininum = 0.0
+            elif h == 1:
                 maximum = 100.0
                 mininum = -100.0
             else:
@@ -323,7 +368,8 @@ def update(sess, replay_buffer, actor, critic):
                 grads_action[n, h] *= (maximum - action_out[n][h]) / (maximum - mininum)
             elif grads_action[n, h] < 0:
                 grads_action[n, h] *= (action_out[n][h] - mininum) / (maximum - mininum)
-    actor.train(s_batch, grads_action)
+    # print grads_action[:,0].shape
+    actor.train(s_batch, grads_action[:,1:], np.reshape(grads_action[:,0], (MINIBATCH_SIZE, 1)))
     actor.iterations += 1
 
     # Update target networks

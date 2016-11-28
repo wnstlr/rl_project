@@ -101,17 +101,19 @@ class ActorNetwork(object):
         assert self.action_gradient != None
         self.actor_gradients = tf.gradients(self.action_out, self.network_params, -self.action_gradient)
         self.actor_param_gradients = tf.gradients(self.action_param_out, self.network_params, -self.action_param_gradient)
+        '''
         gradient_list = self.actor_gradients + self.actor_param_gradients
         clipped_grads, _ = tf.clip_by_global_norm(gradient_list, MAX_NORM)
         clipped_actor_grads = clipped_grads[0:len(self.actor_gradients)]
         clipped_actor_param_grads = clipped_grads[len(self.actor_gradients):]
+        '''
         # Optimization Op
         # Not sure how to clip gradients to norm 10, I get a ValueException: None Values Not Supported error
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2)
         assert self.actor_gradients != None
         assert MAX_NORM != None
-        self.optimize_action = self.optimizer.apply_gradients(zip(clipped_actor_grads, self.network_params))
-        self.optimize_action_param = self.optimizer.apply_gradients(zip(clipped_actor_param_grads, self.network_params))
+        self.optimize_action = self.optimizer.apply_gradients(zip(self.actor_gradients, self.network_params))
+        self.optimize_action_param = self.optimizer.apply_gradients(zip(self.actor_param_gradients, self.network_params))
 
         self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
     
@@ -272,7 +274,8 @@ class CriticNetwork(object):
 
         # Define loss and optimization Op
         self.loss = tflearn.mean_square(self.predicted_q_value, self.out)
-        self.optimizer = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2)
+        # self.optimizer = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2)
+        self.optimize = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2).minimize(self.loss)
         '''
         self.optimize_compute = self.optimizer.compute_gradients(self.loss)
         '''
@@ -282,8 +285,10 @@ class CriticNetwork(object):
         self.computed_gradients_clipped = self.clip_gradients(self.optimize_compute)
         self.optimize_apply = self.optimizer.apply_gradients(self.computed_gradients_clipped)
         '''
+        '''
         clipped_grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, self.network_params), MAX_NORM)
         self.optimize_apply = self.optimizer.apply_gradients(zip(clipped_grads, self.network_params))
+        '''
         '''
         self.optimize_compute = self.optimizer.minimize(self.loss)
         '''
@@ -397,7 +402,14 @@ class CriticNetwork(object):
         return [0 if i==None else i for i in l] 
     '''
     def train(self, inputs, action_all, predicted_q_value):
+        '''
         return self.sess.run([self.out, self.optimize_apply], feed_dict = {
+            self.inputs: inputs,
+            self.action_all: action_all,
+            self.predicted_q_value: predicted_q_value
+        })
+        '''
+        return self.sess.run([self.out, self.optimize], feed_dict = {
             self.inputs: inputs,
             self.action_all: action_all,
             self.predicted_q_value: predicted_q_value
@@ -589,7 +601,15 @@ def update(sess, replay_buffer, actor, critic):
         for h in xrange(PARAM_SIZE):
             maximum = 0
             mininum = 0
+            '''
             if h == 0 or h == 4:
+                maximum = 100
+                mininum = 0
+            '''
+            if h == 0:
+                maximum = 100
+                mininum = -100
+            elif h == 4:
                 maximum = 100
                 mininum = 0
             elif h == 1 or h == 2 or h == 3 or h == 5:
