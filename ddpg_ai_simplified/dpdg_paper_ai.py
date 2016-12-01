@@ -17,7 +17,7 @@ TEAM_NAME = "base_left"
 PLAY_GOALIE = False
 RECORD_DIR = ""
 # Lowered to 100000 from 10000000 as training only for dashing should not take too long
-MAX_ITER = 30000
+MAX_ITER = 120000
 TESTING = True
 Q_DISPLAY_FREQ = 1000
 EVAL_GAMES = 100
@@ -50,8 +50,8 @@ DEFENSE_NPCS = 0
 OFFENSE_DUMMIES = 0
 DEFENSE_DUMMIES = 0
 DEFENSE_CHASERS = 0 
-LOAD_PATH = "/home/azzhao/HFO/Models_and_data/Models30000_dashturn_try2_1000explore_no_x_limits_10000restore/model28399.ckpt"
-LOG_PATH = "Models_and_data/Models60000_dashturn_try2_1000explore_no_x_limits_30000restore/"
+LOAD_PATH = "/home/azzhao/HFO/Models_and_data/Models30000_dashturn_try2_1000explore_no_x_limits_twoactionoptimizers_dashturn_lowlearningrate_ai4/model29119.ckpt"
+LOG_PATH = "Models_and_data/Models150000_dashturn_try2_1000explore_no_x_limits_twoactionoptimizers_dashturn_lowlearningrate_30000explore_ai4/"
 
 def copyAnything(src, dst):
     try:
@@ -218,7 +218,7 @@ def keepPlaying(tid, port):
             if TESTING and actor.iterations >= eval_iter + EVAL_FREQ:
                 num_eval += 1
                 if num_eval % 10 == 0 or actor.iterations + EVAL_FREQ >= MAX_ITER:
-                    save_path = saver.save(sess, LOG_PATH + "model" + str(28399 + actor.iterations) + ".ckpt")
+                    save_path = saver.save(sess, LOG_PATH + "model" + str(29119 + actor.iterations) + ".ckpt")
                     if actor.iterations + EVAL_FREQ >= MAX_ITER:
                         cPickle.dump(actor.replay_buffer, replay_buffer_file, -1)
                 eval_game_rewards = []
@@ -226,6 +226,7 @@ def keepPlaying(tid, port):
                 goals = 0
                 eval_game_success_steps = []
                 eval_kickable = []
+                eval_distance = []
                 # eval_game_dist_proportion_travelled = []
                 for j in xrange(EVAL_GAMES):
                     eval_reward, eval_steps, eval_status, eval_ext_reward, initial_dist, kickable = playEpisode(HFO, actor, critic, EPSILON_EVAL, False, tid)
@@ -233,6 +234,7 @@ def keepPlaying(tid, port):
                     eval_game_rewards.append(eval_reward)
                     eval_game_steps.append(eval_steps)
                     eval_kickable.append(kickable)
+                    eval_distance.append(initial_dist)
                     # eval_game_dist_proportion_travelled.append(eval_reward / initial_dist)
                     if eval_status == GOAL:
                         goals += 1
@@ -240,6 +242,8 @@ def keepPlaying(tid, port):
                 avg_reward = np.mean(eval_game_rewards)
                 reward_stddev = np.std(eval_game_rewards)
                 avg_kickable = np.mean(eval_kickable)
+                avg_distance = np.mean(eval_distance)
+                distance_stddev = np.std(eval_distance)
                 '''
                 avg_dist_proportion = np.mean(eval_game_dist_proportion_travelled)
                 dist_proportion_stddev = np.std(eval_game_dist_proportion_travelled)
@@ -254,6 +258,7 @@ def keepPlaying(tid, port):
                 percent_goal = (goals + 0.0) / EVAL_GAMES
                 evalFile.write(str(actor.iterations) + " " + "{:.8f}".format(avg_reward) + " " + "{:.8f}".format(reward_stddev) + " " + \
                     # "{:.8f}".format(avg_dist_proportion) + " " + "{:.8f}".format(dist_proportion_stddev) + " " + \
+                    "{:.8f}".format(avg_distance) + " " + "{:.8f}".format(distance_stddev) + " " + \
                     "{:.4f}".format(avg_kickable) + " " + \
                     "{:.4f}".format(avg_steps) + " " + "{:.4f}".format(steps_stddev) + " " + "{:.4f}".format(avg_success_steps) + " " + \
                     "{:.4f}".format(success_steps_std) + " " + "{:.4f}".format(percent_goal))

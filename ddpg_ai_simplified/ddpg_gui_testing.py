@@ -19,8 +19,7 @@ RECORD_DIR = ""
 EVAL_GAMES = 100
 DASH_PARAMS_ONLY = False
 DASH_TURN_ONLY = True
-LOAD_PATH = "Models_and_data/Models60000_dashturn_try2_1000explore_no_x_limits_30000restore/model57977.ckpt"
-
+LOAD_PATH = "/home/azzhao/HFO/Models_and_data/Models150000_dashturn_try2_1000explore_no_x_limits_twoactionoptimizers_dashturn_lowlearningrate_30000explore_ai4/model148470.ckpt"
 if DASH_PARAMS_ONLY:
     from ddpg_dash import *
 

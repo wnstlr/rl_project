@@ -24,7 +24,7 @@ MOMENTUM = 0.95
 MOMENTUM_2 = 0.999
 MAX_NORM = 10
 # Base learning rate for the Actor network
-ACTOR_LEARNING_RATE = 0.00001
+ACTOR_LEARNING_RATE = 0.0000025
 # ACTOR_LEARNING_RATE = 0.001
 # Base learning rate for the Critic Network
 CRITIC_LEARNING_RATE = 0.001
@@ -95,6 +95,7 @@ class ActorNetwork(object):
         self.target_network_params = tf.trainable_variables()[len(self.network_params):]
         for i in xrange(len(self.target_network_params)):
             self.target_network_params[i].assign(self.network_params[len(self.all_dashturn_network_params) + i])
+        # print len(self.network_params), len(self.all_dashturn_network_params)
         # Op for periodically updating target network with online network weights
         self.update_target_network_params = \
             [self.target_network_params[i].assign(tf.mul(self.network_params[len(self.all_dashturn_network_params) + i], self.tau) + \
@@ -120,10 +121,11 @@ class ActorNetwork(object):
         self.dashturn_gradients = tf.gradients(self.dash_turn, self.dashturn_network_params, -self.dashturn_grad)
         
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2)
+        self.optimizer_dashturn = tf.train.AdamOptimizer(self.learning_rate, beta1 = MOMENTUM, beta2 = MOMENTUM_2)
         # self.optimizer = tf.train.AdagradOptimizer(self.learning_rate)
         assert self.actor_gradients != None
         self.optimize = self.optimizer.apply_gradients(zip(self.actor_gradients, self.network_params[len(self.all_dashturn_network_params):]))
-        self.optimize_dashturn = self.optimizer.apply_gradients(zip(self.dashturn_gradients, self.dashturn_network_params))
+        self.optimize_dashturn = self.optimizer_dashturn.apply_gradients(zip(self.dashturn_gradients, self.dashturn_network_params))
 
         self.num_trainable_vars = len(self.network_params) + len(self.target_network_params) + len(self.dashturn_network_params) + len(self.target_dashturn_network_params)
     
