@@ -1,3 +1,5 @@
 *.pyc
 *.swp
 .DS_Store
+
+ddpg_ai_simplified_gym/log
