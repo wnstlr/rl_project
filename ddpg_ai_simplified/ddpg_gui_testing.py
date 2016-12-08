@@ -68,10 +68,23 @@ def playEpisode(HFO, actorNet, criticNet, epsilon, tid):
             actor_output = actorNet.select_action(past_states[0], epsilon)
             # print actor_output.shape
             # print actor_output
-            if DASH_PARAMS_ONLY:
+            
+            kickable = current_state[12]
+            if kickable > 0:
+                action = 3
+                action_arg1 = 100
+                goal_ang_sin_rad = current_state[13]
+                goal_ang_cos_rad = current_state[14]
+                goal_ang_rad = np.arccos(goal_ang_cos_rad)
+                if goal_ang_sin_rad < 0:
+                    goal_ang_rad *= -1
+                action_arg2 = goal_ang_rad
+                # print True
+            elif DASH_PARAMS_ONLY:
                 action, action_arg1, action_arg2 = 0, actor_output[0], actor_output[1]
             else:
                 action, action_arg1, action_arg2 = get_action(actor_output)
+            # print action, action_arg1, action_arg2
             if DASH_PARAMS_ONLY:
                 HFO.act(action, action_arg1, action_arg2)
             else:
@@ -121,7 +134,7 @@ def keepPlaying(tid, port):
         eval_iter = max(actor.iterations, critic.iterations)
         for i in xrange(EVAL_GAMES):
             eval_reward, eval_steps, eval_status, eval_ext_reward, initial_dist, kickable = playEpisode(HFO, actor, critic, EPSILON_EVAL, tid)
-            print kickable
+            # print kickable
         HFO.act(QUIT)
         HFO.step()
 
